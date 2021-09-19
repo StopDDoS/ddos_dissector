@@ -1041,7 +1041,6 @@ def evaluate_fingerprint(df, df_fingerprint, fingerprints,
     percentage_of_ips_matched = len(df_fingerprint['ip_src'].unique().tolist()) * 100 / len(df.ip_src.unique().tolist())
     LOGGER.info("IPS MATCHED    : {0}%. The generated fingerprint will filter {0}% of SRC_IPs".format(
         round(percentage_of_ips_matched)))
-
     if not quiet:
         value = round(len(df_fingerprint) * 100 / len(df))
         print_progress_bar(value, "TRAFFIC MATCHED")
@@ -1425,7 +1424,7 @@ def import_logfile(args):
 
 
 # ------------------------------------------------------------------------------
-def prepare_fingerprint_upload(df_fingerprint, fingerprints, n_type, tags, fingerprint_dir):
+def prepare_fingerprint_upload(df_fingerprint, fingerprints, n_type, tags, fingerprint_dir, df_unfiltered):
     """
         Add addicional fields and stats to the generated fingerprint
         :param df_fingerprint: dataframe filtered based on matched fingerprints
@@ -1475,6 +1474,11 @@ def prepare_fingerprint_upload(df_fingerprint, fingerprints, n_type, tags, finge
     fingerprint_combined.update({"key": digest[:15]})
 
     fingerprint_combined.update({"total_ips": len(df_fingerprint['ip_src'].unique().tolist())})
+
+    fingerprint_combined['percentage_of_ips_matched'] = round(len(df_fingerprint['ip_src'].unique().tolist()) * 100 / len(df_unfiltered.ip_src.unique().tolist()))
+    fingerprint_combined['percentage_of_traffic_matched'] = round(len(df_fingerprint) * 100 / len(df_unfiltered))
+
+
 
     if n_type == 0:
         n_type = "FLOW"
@@ -1587,7 +1591,6 @@ def main():
     # Get command line arguments
     parser = parser_add_arguments()
     args = parser.parse_args()
-
     # Set global settings according to command line arguments
     global LOGGER, VERBOSE, QUIET, DEBUG, NOVERIFY
     VERBOSE = args.verbose
@@ -1697,7 +1700,7 @@ def main():
 
     # add extra fields/stats and save file locally
     (enriched_fingerprint, json_file) = prepare_fingerprint_upload(df_filtered, fingerprints, n_type, labels,
-                                                                   args.fingerprint_dir)
+                                                                   args.fingerprint_dir, df)
 
     # show summarized fingerprint
     print_fingerprint(enriched_fingerprint, labels)
