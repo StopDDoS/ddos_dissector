@@ -1,4 +1,11 @@
+import json
+import sys
+import copy
+from os import PathLike
 from argparse import ArgumentParser, RawTextHelpFormatter
+from pygments import highlight
+from pygments.formatters.terminal import TerminalFormatter
+from pygments.lexers.data import JsonLexer
 
 
 def print_logo() -> None:
@@ -44,6 +51,7 @@ def get_argument_parser() -> ArgumentParser:
     parser.add_argument("-n", "--noverify",
                         help="disable verification of the host certificate (for self-signed certificates)",
                         action="store_true")
+    parser.add_argument("-r", "--sampling-rate", help="Sampling rate of Flow capture file (1 in ?)", type=int)
     # parser.add_argument("-g", "--graph",  # FIXME
     #                     help="build dot file (graphviz). It can be used to plot a visual representation\n of the "
     #                          "attack using the tool graphviz. When this option is set, youn will\n received "
@@ -51,3 +59,36 @@ def get_argument_parser() -> ArgumentParser:
     #                     action="store_true")
 
     return parser
+
+
+def print_fingerprint(fingerprint):
+    """
+    Print a summarized version of the fingerprint generated using
+    the highlight module.
+    """
+
+    attack_vectors_array = fingerprint["attack_vector"]
+
+    anon_attack_vector = []
+    for vector in attack_vectors_array:
+        attack_vector_anon = copy.deepcopy(vector)
+        attack_vector_anon.update({"ip_src": "ommited in preview"})
+        anon_attack_vector.append(attack_vector_anon)
+
+    fingerprint["attack_vector"] = anon_attack_vector
+    json_str = json.dumps(fingerprint, indent=4, sort_keys=True)
+    sys.stdout.write('\r[\u2713] Generated fingerprint preview\n')
+    print(highlight(json_str, JsonLexer(), TerminalFormatter()))
+
+
+def save_fingerprint(location: PathLike, fingerprint: dict) -> None:
+    """
+    Save fingerprint to JSON file
+    Args:
+        location: file location
+        fingerprint: fingerprint dict
+
+    Returns: None
+    """
+    with open(location, 'w') as file:
+        json.dump(fingerprint, file)
