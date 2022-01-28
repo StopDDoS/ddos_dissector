@@ -1423,7 +1423,7 @@ def import_logfile(args):
 
 
 # ------------------------------------------------------------------------------
-def prepare_fingerprint_upload(df_fingerprint, fingerprints, n_type, tags, fingerprint_dir, df_unfiltered):
+def prepare_fingerprint_upload(df_fingerprint, fingerprints, n_type, tags, fingerprint_dir, df_unfiltered, filename):
     """
         Add addicional fields and stats to the generated fingerprint
         :param df_fingerprint: dataframe filtered based on matched fingerprints
@@ -1471,6 +1471,7 @@ def prepare_fingerprint_upload(df_fingerprint, fingerprints, n_type, tags, finge
     digest = hashlib.sha256(str(fingerprint_combined).encode()).hexdigest()
     fingerprint_combined.update({"ddos_attack_key": digest})
     fingerprint_combined.update({"key": digest[:15]})
+    fingerprint_combined.update({"capture_name": filename})
 
     fingerprint_combined.update({"total_ips": len(df_fingerprint['ip_src'].unique().tolist())})
 
@@ -1699,7 +1700,7 @@ def main():
 
     # add extra fields/stats and save file locally
     (enriched_fingerprint, json_file) = prepare_fingerprint_upload(df_filtered, fingerprints, n_type, labels,
-                                                                   args.fingerprint_dir, df)
+                                                                   args.fingerprint_dir, df, filename)
 
     # show summarized fingerprint
     print_fingerprint(enriched_fingerprint, labels)
